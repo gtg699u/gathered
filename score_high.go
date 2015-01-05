@@ -11,7 +11,7 @@ var legalMoves [][]bool
 var maxValues []uint8
 var discount float32
 var bestSeq []uint8
-var curSeq []uint8
+//var curSeq []uint8
 
 func oneUp(seq []uint8) {
 	for i := range seq {
@@ -96,14 +96,15 @@ func buildLegalMoves(s string) {
 	}
 }
 
-func runGame(startNode uint8, carryLimit uint8, moves uint8) (highScore uint32) {
+func runGame(startNode uint8, carryLimit uint8, moves uint8, param uint8) (highScore uint32) {
 	// Initial conditions
 	curScore := uint32(0)
 	curTurn := uint8(0)
 	curNode := startNode
 	carry := make([]uint8, carryLimit)
 	curValues := make([]uint8, len(maxValues))
-	carryTurnCap := uint8(carryLimit + 2) // How many moves to look forward, a model parameter
+	carryTurnCap := uint8((carryLimit + 1)+param) // How many moves to look forward, a model parameter
+	bestSeq = make([]uint8, moves)
 	var maxDepth uint8
 	var newScore uint32
 
@@ -117,11 +118,11 @@ func runGame(startNode uint8, carryLimit uint8, moves uint8) (highScore uint32) 
 
 	for curTurn < moves {
 		if c := uint8(carryTurnCap + curTurn); c < moves { // If look ahead depth < number of moves left, use look ahead depth
-			curSeq = make([]uint8, c) 
+			/*curSeq = make([]uint8, c) 
 			_ = copy(curSeq, bestSeq[:curTurn]) // Refresh current sequence to best sequence up to current turn (best seq might have additional "unconfirmed" moves)
 			oneUp(curSeq)
 			fmt.Printf("Iterating from node %d on turn %d with a current score of %d and a endScore of %d following seq %v\n", curNode+1, curTurn, curScore, newScore, curSeq)
-			oneDown(curSeq)
+			oneDown(curSeq)*/
 			maxDepth = c
 			carryCopy := make([]uint8, len(carry)) // Need to create copies to keep state spaces separate
 			curValuesCopy := make([]uint8, len(curValues))
@@ -164,18 +165,18 @@ func runGame(startNode uint8, carryLimit uint8, moves uint8) (highScore uint32) 
 			}
 
 		} else { // If look ahead depth takes us up to or beyond the last move, return results
-			curSeq = make([]uint8, moves)
+			/*curSeq = make([]uint8, moves)
 			_ = copy(curSeq, bestSeq[:curTurn])
 			oneUp(bestSeq)
 			fmt.Printf("Last iteration from node %d on turn %d with a current score of %d and a endScore of %d following seq %v\n", curNode+1, curTurn, curScore, newScore, bestSeq)
-			oneDown(bestSeq)
+			oneDown(bestSeq)*/
 			maxDepth = moves
 			discount = 0.0 // Discount always 0 on final stretch
 			carryCopy := make([]uint8, len(carry))
 			curValuesCopy := make([]uint8, len(curValues))
 			_ = copy(carryCopy, carry)
 			_ = copy(curValuesCopy, curValues)
-			return uint32(dig(curNode, curScore, carryCopy, curValuesCopy, curTurn, maxDepth, 0)) // At end of the line so no need to update play space
+			return dig(curNode, curScore, carryCopy, curValuesCopy, curTurn, maxDepth, 0) // At end of the line so no need to update play space
 		}
 	}
 	return 0 // Allah willing we don't end up here
@@ -213,7 +214,7 @@ func dig(curNode uint8, curScore uint32, carry []uint8, curValues []uint8, depth
 
 	if depth == maxDepth { // End of the line, find Score and return sequence/score
 		endScore = curScore
-		curSeq[depth-1] = curNode
+		//curSeq[depth-1] = curNode
 		if maxValues[curNode] == 0 { // If Home, already added carried items to score, just return score
 			return
 		} else { // Take current score and discount carry items 
@@ -233,7 +234,7 @@ func dig(curNode uint8, curScore uint32, carry []uint8, curValues []uint8, depth
 				curValuesCopy := make([]uint8, len(curValues))
 				_ = copy(carryCopy, carry)
 				_ = copy(curValuesCopy, curValues)
-				curSeq[depth-1] = uint8(i)
+				//curSeq[depth-1] = uint8(i)
 				thisScore := dig(uint8(i), curScore, carryCopy, curValuesCopy, depth, maxDepth, bestScore) 
 				if thisScore > bestScore { // If this sequence scores higher, replace sequence/score
 					bestScore = thisScore
@@ -258,14 +259,26 @@ func main() {
 	v :=  "10,0,8,9,5,9,12,11,10" // level 4
 	carryLimit := uint8(4)
 	moves := uint8(30)
-	bestSeq = make([]uint8, moves)
-	discount = .4 // Model paramter, how much to discount carried items by versus items which actually score
 
 	prepGame(s, v)
-	highScore := runGame(index(0,maxValues), carryLimit, moves)
-	
-	oneUp(bestSeq)
-	fmt.Printf("High Score - %d\nFrom Seq - %v\n", highScore, bestSeq)
-	oneDown(bestSeq)
+	stepParams := []uint8{0, 1, 2}
+	discounts := []float32{.25, .5, .75}
+	highScore := uint32(0)
+	retSeq := make([]uint8, moves)
+	// Cycle through parameters
+	for _, disc := range discounts{
+		for _, stepParam := range stepParams {
+			discount = disc // Model paramter, how much to discount carried items by versus items which actually score
+			paramScore := runGame(index(0,maxValues), carryLimit, moves, stepParam)
+			if paramScore > highScore {
+				highScore = paramScore
+				_ = copy(retSeq, bestSeq)
+			}
+		}
+	}
+
+	oneUp(retSeq)
+	fmt.Printf("High Score - %d\nFrom Seq - %v\n", highScore, retSeq)
+	oneDown(retSeq)
 	fmt.Println(time.Since(start))
 }
