@@ -1,3 +1,6 @@
+ Sample input for first level:
+
+-------------------------------------------------
  "1-2,1-3,1-4,1-6,2-3,3-4,3-5,4-5,4-6\n" +
                 "5,7,6,0,5,7\n" +
                 "2\n" +
@@ -8,15 +11,19 @@
                 "0.73,0.88\n" +
                 "0.1,0.77\n" +
                 "1.69,1.16"
+-------------------------------------------------
 
+Syntax:
 
-nodes
-values
+node pairs
+max values
 carry limit
-moves
+number of moves for level
+coordinates for drawing nodes // Not relevant for us
 
+-------------------------------------------------
 
-
+Node layout for first level (see levelConcepts.png)
 5  4  6
 3     1
       2
