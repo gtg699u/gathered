@@ -31,14 +31,14 @@ func main() {
 		levelsIn := re.FindAllSubmatch(levelsrc, -1)
 		levels = make([]*Level, len(levelsIn))
 		for i, l := range levelsIn {
-			levels[i] = &Level{Edges: string(l[2]), MaxValues: string(l[3]), CarryLimit: uint8(l[4][0] - byte('0')), Moves: uint8(10*(l[5][0]-byte('0')) + l[5][1] - byte('0'))}
+			levels[i] = &Level{Edges: string(l[2]), MaxValues: string(l[3]), CarryLimit: uint8(l[4][0] - '0'), Moves: uint8(10*(l[5][0]-'0') + l[5][1] - '0')}
 		}
 	} else {
 		fmt.Printf("Error reading file : %v\n", err)
 	}
 
 	for i := range levels {
-		fmt.Printf("Levels %d\n%s\n", i, levels[i])
+		fmt.Printf("Level %d\n%s\n", i, levels[i])
 	}
 	fmt.Println(time.Since(start))
 }
